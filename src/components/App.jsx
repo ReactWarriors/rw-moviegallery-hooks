@@ -1,123 +1,119 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import MovieItem from "./MovieItem";
 import { API_URL, API_KEY_3 } from "../utils/api";
 import MovieTabs from "./MovieTabs";
 
-class App extends React.Component {
-  constructor() {
-    super();
+function useMoviesWillWatch() {
+  const [moviesWillWatch, setMoviesWillWatch] = useState([]);
 
-    this.state = {
-      movies: [],
-      moviesWillWatch: [],
-      sort_by: "revenue.desc",
-    };
-  }
+  const addMovieToWillWatch = (movie) => {
+    // const updateMoviesWillWatch = [...moviesWillWatch, movie];
+    // updateMoviesWillWatch.push(movie);
 
-  componentDidMount() {
-    this.getMovies();
-  }
+    setMoviesWillWatch((moviesWillWatch) => [...moviesWillWatch, movie]);
+  };
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.sort_by !== this.state.sort_by) {
-      this.getMovies();
-    }
-  }
+  const deleteMovieFromWillWatch = (movie) => {
+    const updateMoviesWillWatch = moviesWillWatch.filter(
+      (item) => item.id !== movie.id
+    );
 
-  getMovies = () => {
-    fetch(
-      `${API_URL}/discover/movie?api_key=${API_KEY_3}&sort_by=${this.state.sort_by}`
-    )
+    setMoviesWillWatch(updateMoviesWillWatch);
+  };
+
+  return {
+    moviesWillWatch,
+    addMovieToWillWatch,
+    deleteMovieFromWillWatch,
+  };
+}
+
+function useMovies() {
+  const [movies, setMovies] = useState([]);
+
+  const getMovies = ({ sortBy }) => {
+    fetch(`${API_URL}/discover/movie?api_key=${API_KEY_3}&sort_by=${sortBy}`)
       .then((response) => {
         return response.json();
       })
       .then((data) => {
-        this.setState({
-          movies: data.results,
-        });
+        setMovies(data.results);
       });
   };
 
-  deleteMovie = (movie) => {
-    const updateMovies = this.state.movies.filter(
-      (item) => item.id !== movie.id
-    );
+  const deleteMovie = (movie) => {
+    const updateMovies = movies.filter((item) => item.id !== movie.id);
 
-    this.setState({
-      movies: updateMovies,
-    });
+    setMovies(updateMovies);
   };
 
-  addMovieToWillWatch = (movie) => {
-    const updateMoviesWillWatch = [...this.state.moviesWillWatch];
-    updateMoviesWillWatch.push(movie);
+  return {
+    movies,
+    getMovies,
+    deleteMovie,
+  };
+}
 
-    this.setState({
-      moviesWillWatch: updateMoviesWillWatch,
-    });
+function App() {
+  const [sortBy, setSortBy] = useState("revenue.desc");
+
+  const { movies, getMovies, deleteMovie } = useMovies();
+
+  const {
+    moviesWillWatch,
+    addMovieToWillWatch,
+    deleteMovieFromWillWatch,
+  } = useMoviesWillWatch();
+
+  useEffect(() => {
+    getMovies({ sortBy });
+    return () => {}; // componentWillUnmount()
+  }, [sortBy, getMovies]);
+
+  const updateSortBy = (value) => {
+    setSortBy(value);
   };
 
-  deleteMovieFromWillWatch = (movie) => {
-    const updateMoviesWillWatch = this.state.moviesWillWatch.filter(
-      (item) => item.id !== movie.id
-    );
-
-    this.setState({
-      moviesWillWatch: updateMoviesWillWatch,
-    });
-  };
-
-  updateSortBy = (value) => {
-    this.setState({
-      sort_by: value,
-    });
-  };
-
-  render() {
-    return (
-      <div className="container">
-        <div className="row mt-4">
-          <div className="col-9">
-            <div className="row mb-4">
-              <div className="col-12">
-                <MovieTabs
-                  sort_by={this.state.sort_by}
-                  updateSortBy={this.updateSortBy}
-                />
-              </div>
-            </div>
-            <div className="row">
-              {this.state.movies.map((movie) => {
-                return (
-                  <div className="col-6 mb-4" key={movie.id}>
-                    <MovieItem
-                      data={movie}
-                      deleteMovie={this.deleteMovie}
-                      addMovieToWillWatch={this.addMovieToWillWatch}
-                      deleteMovieFromWillWatch={this.deleteMovieFromWillWatch}
-                    />
-                  </div>
-                );
-              })}
+  return (
+    <div className="container">
+      <div className="row mt-4">
+        <div className="col-9">
+          <div className="row mb-4">
+            <div className="col-12">
+              <MovieTabs sort_by={sortBy} updateSortBy={updateSortBy} />
             </div>
           </div>
-          <div className="col-3">
-            <h4>Will Watch: {this.state.moviesWillWatch.length} movies</h4>
-            <ul className="list-group">
-              {this.state.moviesWillWatch.map((movie) => (
-                <li key={movie.id} className="list-group-item">
-                  <div className="d-flex justify-content-between">
-                    <p>{movie.title}</p>
-                    <p>{movie.vote_average}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+          <div className="row">
+            {movies.map((movie) => {
+              return (
+                <div className="col-6 mb-4" key={movie.id}>
+                  <MovieItem
+                    data={movie}
+                    deleteMovie={deleteMovie}
+                    addMovieToWillWatch={addMovieToWillWatch}
+                    deleteMovieFromWillWatch={deleteMovieFromWillWatch}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
+        <div className="col-3">
+          <h4>Will Watch: {moviesWillWatch.length} movies</h4>
+          <ul className="list-group">
+            {moviesWillWatch.map((movie) => (
+              <li key={movie.id} className="list-group-item">
+                <div className="d-flex justify-content-between">
+                  <p>{movie.title}</p>
+                  <p>{movie.vote_average}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
-    );
-  }
+    </div>
+  );
 }
 
 export default App;
