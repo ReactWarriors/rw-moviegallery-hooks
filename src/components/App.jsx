@@ -28,8 +28,16 @@ function useMoviesWillWatch() {
   };
 }
 
-function useMovies() {
+function App() {
+  const [sortBy, setSortBy] = useState("revenue.desc");
+
   const [movies, setMovies] = useState([]);
+
+  const {
+    moviesWillWatch,
+    addMovieToWillWatch,
+    deleteMovieFromWillWatch,
+  } = useMoviesWillWatch();
 
   const getMovies = ({ sortBy }) => {
     fetch(`${API_URL}/discover/movie?api_key=${API_KEY_3}&sort_by=${sortBy}`)
@@ -47,32 +55,14 @@ function useMovies() {
     setMovies(updateMovies);
   };
 
-  return {
-    movies,
-    getMovies,
-    deleteMovie,
+  const updateSortBy = (value) => {
+    setSortBy(value);
   };
-}
-
-function App() {
-  const [sortBy, setSortBy] = useState("revenue.desc");
-
-  const { movies, getMovies, deleteMovie } = useMovies();
-
-  const {
-    moviesWillWatch,
-    addMovieToWillWatch,
-    deleteMovieFromWillWatch,
-  } = useMoviesWillWatch();
 
   useEffect(() => {
     getMovies({ sortBy });
     return () => {}; // componentWillUnmount()
-  }, [sortBy, getMovies]);
-
-  const updateSortBy = (value) => {
-    setSortBy(value);
-  };
+  }, [sortBy]);
 
   return (
     <div className="container">
